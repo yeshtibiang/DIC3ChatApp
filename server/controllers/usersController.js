@@ -48,6 +48,13 @@ module.exports.signUp = async (req, res, next) => {
 
 }
 
+const maxAge = 3 * 24 * 60 * 60;
+const createToken = (id) => {
+    return jwt.sign({ id }, 'dic3-user', {
+        expiresIn: maxAge
+    });
+}
+
 module.exports.login = async (req, res, next) => {
     try{
         const { username, password} = req.body;
@@ -72,6 +79,9 @@ module.exports.login = async (req, res, next) => {
         // supprimer le user.password pour éviter des attaques si on arrive à recupéer l'objet user renvoyé
         delete user.password;
 
+        // on crée un token
+        // const token = createToken(user._id);
+        // res.cookie('jwt', token, { httpOnly: true, maxAge: maxAge * 1000 });
         return res.json({
             status: true,
             user

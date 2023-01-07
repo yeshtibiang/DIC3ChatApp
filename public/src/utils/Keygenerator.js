@@ -41,7 +41,6 @@ export default class RSA {
     }
 
     static decrypt(msg, d, n) {
-        console.log("message a decrypter " + typeof(msg))
         let decryptedMsg = bigInt(msg).modPow(d, n);
         return RSA.decode(decryptedMsg)
     }

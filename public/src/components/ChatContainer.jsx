@@ -62,45 +62,76 @@ function ChatContainer({ currentChat, socket }) {
 
     }, [currentChat])
     const handleSendMessage = async (msg) =>{
+
         // recupérons les données du user
         const dataUser = JSON.parse(localStorage.getItem("dic3-chat-user"));
         let messageChiffre = "";
+
         // gestion de la demande de clé
         // envoie de la demande
 
+
+
         // TODO: à modifier plus tard car pas très bon comme algo
         if (socket.current){
-            socket.current.emit("key-demand", {
+            messageChiffre = RSA.encrypt(msg, publicKey);
+            msg = messageChiffre
+
+
+            socket.current.emit("send-msg", {
                 to: currentChat._id,
-                from: dataUser._id
-            }, async function (public_key) {
-                console.log((msg))
-                messageChiffre = RSA.encrypt(msg, public_key);
-                msg = messageChiffre
-                console.log("msg chiffré " + msg)
-
-                socket.current.emit("send-msg", {
-                    to: currentChat._id,
-                    from: dataUser._id,
-                    msg
-                })
-
-                console.log("message chiffé" +msg)
-                // appele de l'api qui permet de sauvegarder dans la base de données
-                await axios.post(sendMessageRoute, {
-                    from: dataUser._id,
-                    to: currentChat._id,
-                    message: msg
-                });
-
-                const msgs = [...messages];
-                msgs.push({
-                    fromSelf: true, message: msg
-                });
-                setMessages(msgs);
-                console.log("messages " +messages)
-
+                from: dataUser._id,
+                msg
             })
+
+            // appele de l'api qui permet de sauvegarder dans la base de données
+            await axios.post(sendMessageRoute, {
+                from: dataUser._id,
+                to: currentChat._id,
+                message: msg
+            });
+
+
+            const msgs = [...messages];
+
+            console.log("les messagese ddans messages "+msgs)
+            msgs.push({
+                fromSelf: true, message: msg
+            });
+            setMessages(msgs);
+
+
+            // socket.current.emit("key-demand", {
+            //     to: currentChat._id,
+            //     from: dataUser._id
+            // }, async function (public_key) {
+            //     console.log((msg))
+            //     messageChiffre = RSA.encrypt(msg, public_key);
+            //     msg = messageChiffre
+            //     console.log("msg chiffré " + msg)
+            //
+            //     socket.current.emit("send-msg", {
+            //         to: currentChat._id,
+            //         from: dataUser._id,
+            //         msg
+            //     })
+            //
+            //     console.log("message chiffé" +msg)
+            //     // appele de l'api qui permet de sauvegarder dans la base de données
+            //     await axios.post(sendMessageRoute, {
+            //         from: dataUser._id,
+            //         to: currentChat._id,
+            //         message: msg
+            //     });
+            //
+            //     const msgs = [...messages];
+            //     msgs.push({
+            //         fromSelf: true, message: msg
+            //     });
+            //     setMessages(msgs);
+            //     console.log("messages " +messages)
+            //
+            // })
         }
         else {
             if (publicKey){
@@ -126,21 +157,31 @@ function ChatContainer({ currentChat, socket }) {
 
     // useEffect pour les messages reçus
     useEffect(() => {
+
+        let dataUser = JSON.parse(localStorage.getItem("dic3-chat-user"));
         if (socket.current){
-           socket.current.on("msg-recieve", (msg) => {
-               console.log(msg)
-                let private_key = privateKey
-                let msgDecrypte = RSA.decrypt(msg, private_key, publicKey)
-                msg = msgDecrypte;
-                setMessageArrive({
-                    fromSelf: false, message: msg
-                })
+           socket.current.on("msg-recieve", async (msg) => {
+               if (privateKey) {
+
+                   console.log("message déchiffré " + msg)
+                   setMessageArrive({
+                       fromSelf: false, message: msg
+                   })
+               }
+               // await axios.get(`${getPrivateKey}/${dataUser._id}`).then((res) => {
+               //     let privateKey = res.data.privateKey.private_key
+               //
+               //     setPrivateKey(res.data.privateKey.private_key)
+               // })
+
+               //console.log(privateKey)
+
            })
         }
-    }, []);
+    }, [socket]);
 
     useEffect(() => {
-        messageArrive && setMessages((prev) => [...prev, RSA.decrypt(messageArrive, privateKey)])
+        messageArrive && setMessages((prev) => [...prev, messageArrive])
     }, [messageArrive]);
 
     useEffect(() => {
@@ -163,7 +204,6 @@ function ChatContainer({ currentChat, socket }) {
                 {
                     messages.map( (message) => {
 
-                        //console.log(RSA.decrypt(message.message, takePrivateKey(), publicKey) )
                         return (
                             <div ref={scrollRef} key={uuidv4()}>
                                 <div className={`message ${message.fromSelf? "sended" : "recieved"}`}>

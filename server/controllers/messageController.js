@@ -2,6 +2,7 @@ const modelMessage = require("../model/message")
 const modelUser = require("../model/user")
 
 module.exports.ajouterMessage = async (req, res, next) => {
+    console.log("Ajout d'un message")
     try {
         const {from, to, message} = req.body;
         const data = await modelMessage.create({
@@ -24,8 +25,6 @@ module.exports.recevoirPublicKey = async (req, res, next) => {
         const {id} = req.body;
         const publicKey = await modelUser.findOne({id}).select("public_key")
 
-        console.log("Public key: " + publicKey)
-
         return res.json({
             publicKey
         })
@@ -38,8 +37,6 @@ module.exports.recevoirPrivateKey = async (req, res, next) => {
     try{
         const {id} = req.body;
         const privateKey = await modelUser.findOne({id}).select("private_key")
-
-        console.log("Private key: " + privateKey)
 
         return res.json({
             privateKey
